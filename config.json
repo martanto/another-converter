@@ -1,20 +1,13 @@
 {
     "default" : "default",
+    "input_directory" : "D:\\Data\\Agung",
+    "start_date" : "2017-11-01",
+    "end_date" : "2017-11-02",
+    "output_directory" : "D:\\Data\\Output\\Converted",
+    "dayplot_directory" : "D:\\Data\\Output\\Dayplots",
     "type" : {
-        "default" : {
-            "input_directory" : "F:\\data_earthworm\\continuous\\seisan",
-            "start_date" : "2017-11-01",
-            "end_date" : "2017-11-02",
-            "output_directory" : "F:\\Output\\Converted",
-            "dayplot_directory" : "F:\\Output\\Dayplots"
-        },
         "sac" : {
-            "input_directory" : "D:\\Seismik\\Slamet",
-            "channels" : ["BCSZ","CLKX","CLKY","CLKZ"],
-            "start_date" : "2014-03-09",
-            "end_date" : "2014-03-09",
-            "output_directory" : "D:\\Output\\Converted",
-            "dayplot_directory" : "D:\\Output\\Dayplots"
+            "channels" : ["BCSZ","CLKX","CLKY","CLKZ"]
         }
     }
 }

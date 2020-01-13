@@ -1,0 +1,11 @@
+{
+    "default": "mysql",
+    "mysql": {
+        "driver": "mysql",
+        "host": "localhost",
+        "database": "seismic_db",
+        "user": "homestead",
+        "password": "secret",
+        "prefix": ""
+    }
+}
