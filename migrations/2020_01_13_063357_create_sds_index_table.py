@@ -15,6 +15,7 @@ class CreateSdsIndexTable(Migration):
             table.float('min_amplitude').default(0.0)
             table.float('max_amplitude').default(0.0)
             table.float('availability').default(0.0)
+            table.big_integer('filesize').default(0)
             table.unique(['scnl','date'])
             table.index('date')
             table.index('scnl')

@@ -2,12 +2,12 @@ import glob
 import json
 import datetime
 import os
-from orator import Model, DatabaseManager
-from fnmatch import fnmatch
 from obspy import Stream, Trace, read
 import numpy as np
 import orator
 from models.sds_index import SdsIndex
+import multiprocessing
+from multiprocessing import Pool
 
 class Configuration():
     '''
@@ -24,9 +24,10 @@ class Configuration():
     def get_location(self):
         return self.location
 
-    def get(self, type='default'):
+    def get(self):
         with open(self.get_location()) as file_config:
             load_config = json.load(file_config)
+            type = load_config['default']
             start_date = datetime.datetime.strptime(load_config['start_date'],'%Y-%m-%d')
             end_date = datetime.datetime.strptime(load_config['end_date'],'%Y-%m-%d')
             config = {
@@ -41,8 +42,8 @@ class Configuration():
 
 class Files():
     ''' Mendapatkan semua files sesuai konfigurasi pencarian '''
-    def __init__(self, config=Configuration()):
-        self.config = config
+    def __init__(self):
+        self.config = Configuration().get()
 
     def search_default(self, date):
         input_directory = self.config['input_directory']
@@ -50,34 +51,37 @@ class Files():
         if len(stream_files) > 0:
             new_stream = Stream()
             for stream in stream_files:
-                new_stream+=read(stream)
+                read_stream = read(stream)
+                for trace in read_stream:
+                    if trace.stats.sampling_rate < 50.0:
+                        read_stream.remove(trace)
+                new_stream+=read_stream
             new_stream.merge(fill_value=0)
             return new_stream
         pass
 
     def search_sac(self, date):
-        pass
-        # search_list = []
-        # stream_list = []
-        # input_directory = self.config['input_directory']
-        # start_date = self.config['start_date']
-        # end_date = self.config['end_date']
-        # channels = self.config['channels']
-        # print('Searching files....')
-        # for n in range(int((end_date-start_date).days)+1):
-        #     filter = start_date+datetime.timedelta(n)
-        #     for root, folders, files in os.walk(input_directory):
-        #         for folder in folders:
-        #             if filter.strftime('%Y%m%d') in folder:
-        #                 channel_folder = os.path.join(root, folder)
-        #                 for channel in channels:
-        #                     channel_files = [f for f in glob.glob(channel_folder + "\\"+channel+'*', recursive=False)]
-        #                     for channel_file in channel_files:
-        #                         search_list.append(channel_file)
-        #     stream_list.append(NewStream(search_list).get())
-        # return stream_list
+        search_list = []
+        stream_list = []
+        input_directory = self.config['input_directory']
+        start_date = self.config['start_date']
+        end_date = self.config['end_date']
+        channels = self.config['channels']
+        print('Searching files....')
+        for n in range(int((end_date-start_date).days)+1):
+            filter = start_date+datetime.timedelta(n)
+            for root, folders, files in os.walk(input_directory):
+                for folder in folders:
+                    if filter.strftime('%Y%m%d') in folder:
+                        channel_folder = os.path.join(root, folder)
+                        for channel in channels:
+                            channel_files = [f for f in glob.glob(channel_folder + "\\"+channel+'*', recursive=False)]
+                            for channel_file in channel_files:
+                                search_list.append(channel_file)
+            stream_list.append(NewStream().get(search_list))
+        return stream_list
 
-    def get(self, search, date):
+    def get(self, date, search='default'):
         if search == 'default':
             return self.search_default(date)
         if search == 'sac':
@@ -99,7 +103,7 @@ class NewStream():
             except:
                 pass
             else:
-                list_traces.append(stream[0])
+                list_traces.append(trace)
 
         return Stream(list_traces)
 
@@ -107,56 +111,62 @@ class NewTrace():
     def __init__(self):
         pass
 
-    def get_channel(self, channel):
-        if 'Z' in channel:
+    def get_channel(self, trace):
+        if 'Z' in trace.stats.location:
             return 'EHZ'
-        if 'N' in channel:
+        if 'Z' in trace.stats.channel:
+            return 'EHZ'
+        if 'N' in trace.stats.channel:
             return 'EHN'
-        if 'E' in channel:
+        if 'E' in trace.stats.channel:
             return 'EHE'
 
     def get(self, trace):
         trace.data = np.require(trace.data, dtype=np.int32)
         trace.stats['network'] = 'VG'
-        trace.stats['channel'] = self.get_channel(trace.stats.channel)
+        trace.stats['channel'] = self.get_channel(trace)
         trace.stats['location'] = '00'
         return trace
 
 class Convert():
-    def __init__(self, location='config.json'):
+    def __init__(self, location='config.json', save_to_database=False):
         self.files = Files()
         self.sds = SDS()
+        self.save_index = save_to_database
         self.index = SaveIndex()
-        self.config = Configuration(location)
+        self.config = Configuration(location).get()
+        self.output = self.config['output_directory']
 
-    def date_range(self, start_date, end_date):
+    def date_range(self):
+        start_date = self.config['start_date']
+        end_date = self.config['end_date']
         for n in range(int((end_date-start_date).days)+1):
             yield start_date+datetime.timedelta(n)
 
-    def to_mseed(self, search='default'):
+    def to_mseed(self, use_cpu=2):
         print('Reading configuration....')
-        config = self.config.get(search)
-        start_date = config['start_date']
-        end_date = config['end_date']
-        for date in self.date_range(start_date, end_date):
-            stream = Files(config).get(search,date)
-            self.save(stream,config['output_directory'],date)
-        return self
+        with Pool(use_cpu) as pool:
+            pool.map(self._to_mseed, self.date_range())
+        return self 
 
-    def save(self,stream, output, date):
+    def _to_mseed(self, date):
+        stream = Files().get(date)
+        self.save(stream,date)
+
+    def save(self,stream, date):
         for tr in stream:
             new_trace = NewTrace().get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
-                path = self.sds.save(output,new_trace)
+                path = self.sds.save(self.output,new_trace)
                 self.index.save(path, new_trace, date)
             else:
                 print('Skipped : %s' %new_trace)
         print('DONE!!')
 
 class SDS():
-    def __init__(self, config=Configuration()):
-        self.config = config
+    def __init__(self):
+        pass
 
     def check_directory(self, directory):
         if not os.path.exists(directory):
@@ -217,8 +227,13 @@ class SaveIndex():
         return float(round(trace.stats.sampling_rate, 2))
 
     def get_availability(self,trace):
-        availability = float(round(trace.stats.npts/8640000*100,2))
+        availability = float(round(trace.stats.npts/(trace.stats.sampling_rate*3600*24)*100,2))
         return availability
+
+    def get_filesize(self,filename):
+        file_mseed = os.path.join(Configuration().get()['output_directory'], filename)
+        trace = read(file_mseed)[0]
+        return trace.stats.mseed.filesize
 
     def save(self, filename, trace, date):
         attributes = {
@@ -230,10 +245,15 @@ class SaveIndex():
             'filename':filename,
             'sampling_rate':self.get_sampling_rate(trace),
             'max_amplitude':float(abs(trace.max())),
-            'availability':self.get_availability(trace)
+            'availability':self.get_availability(trace),
+            'filesize':self.get_filesize(filename)
         }
         
         SdsIndex.update_or_create(attributes=attributes, values=values)
 
-convert = Convert()
-streams = convert.to_mseed()
+def main():
+    print("Jumlah CPU : ", multiprocessing.cpu_count())
+    Convert(save_to_database=True).to_mseed(10)
+
+if __name__ == '__main__':
+    main()

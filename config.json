@@ -1,10 +1,10 @@
 {
     "default" : "default",
-    "input_directory" : "D:\\Data\\Agung",
+    "input_directory" : "F:\\data_earthworm\\continuous\\seisan",
     "start_date" : "2017-11-01",
-    "end_date" : "2017-11-02",
-    "output_directory" : "D:\\Data\\Output\\Converted",
-    "dayplot_directory" : "D:\\Data\\Output\\Dayplots",
+    "end_date" : "2020-01-30",
+    "output_directory" : "F:\\Output\\Converted",
+    "dayplot_directory" : "F:\\Output\\Dayplots",
     "type" : {
         "sac" : {
             "channels" : ["BCSZ","CLKX","CLKY","CLKZ"]

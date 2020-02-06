@@ -4,8 +4,8 @@
         "driver": "mysql",
         "host": "localhost",
         "database": "seismic_db",
-        "user": "homestead",
-        "password": "secret",
+        "user": "root",
+        "password": "",
         "prefix": ""
     }
 }
