@@ -1,12 +1,22 @@
 {
     "default" : "default",
-    "input_directory" : "D:\\Seismik\\Karangetang",
-    "start_date" : "2019-02-24",
-    "end_date" : "2020-02-09",
-    "output_directory" : "D:\\Seismik\\Output",
+    "output_directory" : "Z:\\Output",
     "type" : {
+        "default" : {
+            "input_directory" : "F:\\data_earthworm\\continuous\\seisan",
+            "start_date" : "2017-10-18",
+            "end_date" : "2020-01-30"
+        },
         "sac" : {
+            "input_directory" : "F:\\Continuous",
+            "start_date" : "2013-09-11",
+            "end_date" : "2014-03-01",
             "channels" : ["BCSZ","CLKX","CLKY","CLKZ"]
+        },
+        "itb" : {
+            "input_directory" : "I:\\Data-Bali-per-10-menit(2)",
+            "start_date" : "2019-02-24",
+            "end_date" : "2019-02-24"
         }
     }
 }

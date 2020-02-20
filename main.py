@@ -2,20 +2,22 @@ import glob
 import json
 import datetime
 import os
-from obspy import Stream, Trace, read
+from obspy import Stream, Trace, read, UTCDateTime
 import numpy as np
 import pandas as pd
 import orator
 from models.sds_index import SdsIndex
 import multiprocessing
 from multiprocessing import Pool
+import matplotlib.pyplot as plt
 
-class Configuration():
+class Configuration:
     '''
     Membaca Konfigurasi File \n
     Pastikan lokasi file config.json sudah sesuai 
     '''
-    def __init__(self, location='config.json'):
+    def __init__(self, default=None, location='config.json'):
+        self.default = default
         self.location = location
 
     def set_location(self, location):
@@ -25,46 +27,56 @@ class Configuration():
     def get_location(self):
         return self.location
 
+    def check_directory(self, directory):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        return self
+
     def get(self):
         with open(self.get_location()) as file_config:
             load_config = json.load(file_config)
             get_config = load_config['default']
-            start_date = datetime.datetime.strptime(load_config['start_date'],'%Y-%m-%d')
-            end_date = datetime.datetime.strptime(load_config['end_date'],'%Y-%m-%d')
+            start_date = datetime.datetime.strptime(load_config['type'][get_config]['start_date'],'%Y-%m-%d')
+            end_date = datetime.datetime.strptime(load_config['type'][get_config]['end_date'],'%Y-%m-%d')
+            output_directory = load_config['output_directory']
             config = {
-                'input_directory' : load_config['input_directory'],
+                'default' : get_config,
+                'input_directory' : load_config['type'][get_config]['input_directory'],
                 'start_date' : start_date,
                 'end_date' : end_date,
-                'output_directory' : load_config['output_directory'],
-                'index_directory' : os.path.join(load_config['output_directory'], 'Index'),
-                'converted_directory' : os.path.join(load_config['output_directory'], 'Converted'),
-                'dayplot_directory' : os.path.join(load_config['output_directory'], 'Dayplots'),
+                'output_directory' : output_directory,
+                'index_directory' : os.path.join(output_directory, 'Index'),
+                'converted_directory' : os.path.join(output_directory, 'Converted'),
+                'dayplot_directory' : os.path.join(output_directory, 'Dayplots'),
+                'spectogram_directory' : os.path.join(output_directory, 'Spectogram'),
                 'channels' : load_config['type'][get_config]['channels'] if get_config == 'sac' else []
             }
+
+            self.check_directory(config['output_directory'])
+            self.check_directory(config['index_directory'])
+            self.check_directory(config['converted_directory'])
+            self.check_directory(config['dayplot_directory'])
+            self.check_directory(config['spectogram_directory'])
+
             return config
 
-class Files():
+class Files:
     ''' Mendapatkan semua files sesuai konfigurasi pencarian '''
     def __init__(self):
         self.config = Configuration().get()
 
     def search_default(self, date):
         input_directory = self.config['input_directory']
-        stream_files = glob.glob(input_directory+'\\'+date.strftime('%Y-%m-%d')+'*')
-        if len(stream_files) > 0:
-            new_stream = Stream()
-            for stream in stream_files:
-                try:
-                    read_stream = read(stream)
-                    for trace in read_stream:
-                        if trace.stats.sampling_rate < 50.0:
-                            read_stream.remove(trace)
-                    new_stream+=read_stream
-                except:
-                    print('Error : '+stream)
-            new_stream.merge(fill_value=0)
-            return new_stream
-
+        try:
+            stream = read(input_directory+'\\'+date.strftime('%Y-%m-%d')+'*')
+            for trace in stream:
+                if trace.stats.sampling_rate < 50.0:
+                    stream.remove(trace)
+            stream.merge(fill_value=0)
+            return stream
+        except:
+            print('Error : '+date.strftime('%Y-%m-%d'))
+        
     def search_sac(self, date):
         search_list = []
         stream_list = []
@@ -86,17 +98,32 @@ class Files():
             stream_list.append(NewStream().get(search_list))
         return stream_list
 
+    def search_itb(self, date):
+        input_directory = os.path.join(self.config['input_directory'], date.strftime('%y%m%d'))
+        new_stream = Stream()
+        for root, folders, files in os.walk(input_directory):
+            for stream in [f for f in files if f.endswith('.mseed')]:
+                try:
+                    read_stream = read(os.path.join(root, stream))
+                    new_stream+=read_stream
+                except:
+                    print('Error : '+stream)
+        new_stream.merge(fill_value=0)
+        return new_stream
+
     def get(self, date, search='default'):
         if search == 'default':
             return self.search_default(date)
         if search == 'sac':
             return self.search_sac(date)
+        if search == 'itb':
+            return self.search_itb(date)
         return "Konfigurasi pencarian tidak ditemukan"
 
     def save(self, trace):
         pass
 
-class NewStream():
+class NewStream:
     def __init__(self):
         pass
 
@@ -112,7 +139,7 @@ class NewStream():
 
         return Stream(list_traces)
 
-class NewTrace():
+class NewTrace:
     def __init__(self):
         pass
 
@@ -125,7 +152,7 @@ class NewTrace():
             return 'EHN'
         if 'E' in trace.stats.channel:
             return 'EHE'
-
+        
     def get(self, trace):
         trace.data = np.require(trace.data, dtype=np.int32)
         trace.stats['network'] = 'VG'
@@ -133,16 +160,18 @@ class NewTrace():
         trace.stats['location'] = '00'
         return trace
 
-class Convert():
-    def __init__(self, location='config.json', save_to_database=False, save_to_csv=False):
-        self.files = Files()
-        self.sds = SDS()
+class Convert:
+    def __init__(self, location='config.json', save_to_database=False, save_to_csv=False, save_dayplot=False, save_spectogram=False):
         self.save_index = save_to_database
         self.save_csv = save_to_csv
-        self.index = SaveIndex()
+        self.save_dayplot = save_dayplot
+        self.save_spectogram = save_spectogram
         self.config = Configuration(location).get()
+        self.search = self.config['default']
         self.index_directory = self.config['index_directory']
         self.output = self.config['converted_directory']
+        self.dayplot_directory = self.config['dayplot_directory']
+        self.spectogram_directory = self.config['spectogram_directory']
 
     def date_range(self):
         start_date = self.config['start_date']
@@ -154,10 +183,9 @@ class Convert():
         print('Reading configuration....')
         with Pool(use_cpu) as pool:
             pool.map(self._to_mseed, self.date_range())
-        return self 
 
     def _to_mseed(self, date):
-        stream = Files().get(date)
+        stream = Files().get(date=date, search=self.search)
         self.save(stream,date)
 
     def save(self,stream, date):
@@ -165,16 +193,20 @@ class Convert():
             new_trace = NewTrace().get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
-                path = self.sds.save(self.output,new_trace)
+                path = SDS().save(self.output,new_trace)
                 if self.save_index:
-                    self.index.save(path, new_trace, date, db=True)
+                    SaveIndex().save(path, new_trace, date, db=True)
                 if self.save_csv==True:
-                    self.index.save(path, new_trace, date, csv=True, index_directory=self.index_directory)
+                    SaveIndex().save(path, new_trace, date, csv=True, index_directory=self.index_directory)
+                if self.save_dayplot==True:
+                    Plot().save(trace=new_trace, save_dayplot=True, dayplot_directory=self.dayplot_directory)
+                if self.save_spectogram==True:
+                    Plot().save(trace=new_trace, save_spectogram=True, spectogram_directory=self.spectogram_directory)
             else:
                 print('Skipped '+date.strftime('%Y-%m-%d'))
         print(':: '+date.strftime('%Y-%m-%d')+' DONE!!')
 
-class SDS():
+class SDS:
     def __init__(self):
         pass
 
@@ -186,7 +218,7 @@ class SDS():
     def file_not_exists(self, file):
         return not os.path.exists(file)
 
-    def save(self, output, trace=Trace):
+    def get_directory(self, output, trace):
         structure = {
             'year' : trace.stats.starttime.strftime('%Y'),
             'julian_day' : trace.stats.starttime.strftime('%j'),
@@ -217,6 +249,10 @@ class SDS():
 
         self.check_directory(os.path.join(output,path))
         full_path = os.path.join(output,path,filename)
+        return filename, path, full_path
+
+    def save(self, output, trace=Trace):
+        filename, path, full_path = self.get_directory(output, trace)
         if self.file_not_exists(full_path):
             try:
                 trace.write(full_path, format='MSEED', encoding=11)
@@ -225,7 +261,7 @@ class SDS():
                 trace.write(full_path, format='MSEED')
         return os.path.join(path,filename)
 
-class SaveIndex():
+class SaveIndex:
     def __init__(self):
         pass
 
@@ -263,9 +299,6 @@ class SaveIndex():
             SdsIndex.update_or_create(attributes=attributes, values=values)
 
         if csv:
-            if not os.path.exists(index_directory):
-                os.makedirs(index_directory)
-
             df = {
                 'scnl' : [attributes['scnl']],
                 'date' : [attributes['date']],
@@ -283,12 +316,52 @@ class SaveIndex():
                 df.to_csv(file_csv, header=['scnl','date','sampling_rate','max_amplitude','availability','filesize'], index=False, date_format='%Y-%m-%d')
             else:
                 df.to_csv(file_csv, mode='a', header=False, index=False, date_format='%Y-%m-%d')
-            
+
+class Plot:
+    def __init__(self):
+        pass
+
+    def set_time(self, trace):
+        date = trace.stats.starttime.strftime('%Y-%m-%d')
+        starttime = UTCDateTime(date+'T00:00:00.000000Z')
+        endtime = UTCDateTime(date+'T23:59:59.990000Z')
+        return starttime, endtime
+
+    def save(self, trace, save_dayplot=False, dayplot_directory=None, save_spectogram=False, spectogram_directory=None):
+        title = trace.stats.starttime.strftime('%Y-%m-%d')+' | '+trace.id+' | Sampling Rate: '+str(trace.stats.sampling_rate)+' | '+str(trace.stats.npts)+' samples'
+
+        if save_dayplot == True:
+            starttime, endtime = self.set_time(trace)
+            filename, path, full_path = SDS().get_directory(dayplot_directory, trace)
+            trace.plot(
+                type='dayplot',
+                starttime=starttime,
+                endtime=endtime,
+                interval=60,
+                one_tick_per_line=True, 
+                color=['k'], 
+                outfile= full_path+'.png', 
+                number_of_ticks=13, 
+                size=(1200,900), 
+                title=title, 
+                show=False
+            )
+
+        if save_spectogram==True:
+            filename, path, full_path = SDS().get_directory(spectogram_directory, trace)
+            trace.spectrogram(
+                outfile=full_path+'.png',
+                title=title,
+                show=False,
+                fmt='png'
+            )
+            plt.close()
+
 def main():
     print("Jumlah CPU : ", multiprocessing.cpu_count())
     cpu = int(multiprocessing.cpu_count()/2)
     print('CPU yang digunakan: '+str(cpu))
-    Convert(save_to_csv=True).to_mseed(cpu)
+    Convert(save_to_csv=True, save_dayplot=True, save_spectogram=True).to_mseed(cpu)
 
 if __name__ == '__main__':
     main()
