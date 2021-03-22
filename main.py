@@ -5,11 +5,11 @@ import os
 from obspy import Stream, Trace, read, UTCDateTime
 import numpy as np
 import pandas as pd
-import orator
 from models.sds_index import SdsIndex
 import multiprocessing
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import concurrent.futures
 
 class Configuration:
     '''
@@ -39,8 +39,12 @@ class Configuration:
             start_date = datetime.datetime.strptime(load_config['type'][get_config]['start_date'],'%Y-%m-%d')
             end_date = datetime.datetime.strptime(load_config['type'][get_config]['end_date'],'%Y-%m-%d')
             output_directory = load_config['output_directory']
+            save_to_database = load_config['save_to_database']
+            cpu_used = load_config['cpu_used']
             config = {
                 'default' : get_config,
+                'cpu_used': cpu_used,
+                'save_to_database': save_to_database,
                 'input_directory' : load_config['type'][get_config]['input_directory'],
                 'start_date' : start_date,
                 'end_date' : end_date,
@@ -49,7 +53,8 @@ class Configuration:
                 'converted_directory' : os.path.join(output_directory, 'Converted'),
                 'dayplot_directory' : os.path.join(output_directory, 'Dayplots'),
                 'spectogram_directory' : os.path.join(output_directory, 'Spectogram'),
-                'channels' : load_config['type'][get_config]['channels'] if get_config == 'sac' else []
+                'channels' : load_config['type'][get_config]['channels'] if get_config == 'sac' else [],
+                'type': load_config['type']
             }
 
             self.check_directory(config['output_directory'])
@@ -68,14 +73,14 @@ class Files:
     def search_default(self, date):
         input_directory = self.config['input_directory']
         try:
-            stream = read(input_directory+'\\'+date.strftime('%Y-%m-%d')+'*')
+            stream = read(os.path.join(input_directory, date.strftime('%Y-%m-%d')+'*'))
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
             stream.merge(fill_value=0)
             return stream
-        except:
-            print('Error : '+date.strftime('%Y-%m-%d'))
+        except Exception as e:
+            print(e)
         
     def search_sac(self, date):
         search_list = []
@@ -87,12 +92,12 @@ class Files:
         print('Searching files....')
         for n in range(int((end_date-start_date).days)+1):
             filter = start_date+datetime.timedelta(n)
-            for root, folders, files in os.walk(input_directory):
+            for root, folders, _ in os.walk(input_directory):
                 for folder in folders:
                     if filter.strftime('%Y%m%d') in folder:
                         channel_folder = os.path.join(root, folder)
                         for channel in channels:
-                            channel_files = [f for f in glob.glob(channel_folder + "\\"+channel+'*', recursive=False)]
+                            channel_files = [f for f in glob.glob(os.path.join(channel_folder, channel+'*'), recursive=False)]
                             for channel_file in channel_files:
                                 search_list.append(channel_file)
             stream_list.append(NewStream().get(search_list))
@@ -101,14 +106,39 @@ class Files:
     def search_itb(self, date):
         input_directory = os.path.join(self.config['input_directory'], date.strftime('%y%m%d'))
         new_stream = Stream()
-        for root, folders, files in os.walk(input_directory):
-            for stream in [f for f in files if f.endswith('.mseed')]:
+        for root, _, files in os.walk(input_directory):
+            for stream in [f for f in files if f.endswith('.mseed') or f.endswith('.sac')]:
                 try:
                     read_stream = read(os.path.join(root, stream))
+                    for trace in read_stream:
+                        if trace.stats.sampling_rate < 50.0:
+                            read_stream.remove(trace)
                     new_stream+=read_stream
                 except:
                     print('Error : '+stream)
         new_stream.merge(fill_value=0)
+        return new_stream
+
+    def search_win_sinabung(self, date):
+        year_month = date.strftime('%y%m')
+        year_month_day = date.strftime('%y%m%d')
+        input_directory = os.path.join(self.config['input_directory'], year_month, year_month_day)
+        print('==== Reading ALL one minute files ====')
+        streams = read(os.path.join(input_directory, '*','*'))
+        stream = streams.merge(fill_value=0)
+        return stream
+
+    def search_sds(self, date):
+        config = self.config['type']['sds']
+        year = date.strftime('%Y')
+        julian_day = date.strftime('%j')
+        new_stream = Stream()
+        for station in self.config['type']['sds']['stations']:
+            filename = 'VG.'+station.upper()+'.00.EHZ.D.'+year+'.'+julian_day
+            stream = os.path.join(self.config['input_directory'],year,'VG',station.upper(),'EHZ.D',filename)
+            if os.path.exists(stream):
+                stream = read(stream)
+                new_stream+=stream
         return new_stream
 
     def get(self, date, search='default'):
@@ -118,6 +148,10 @@ class Files:
             return self.search_sac(date)
         if search == 'itb':
             return self.search_itb(date)
+        if search == 'win_sinabung':
+            return self.search_win_sinabung(date)
+        if search == 'sds':
+            return self.search_sds(date)
         return "Konfigurasi pencarian tidak ditemukan"
 
     def save(self, trace):
@@ -140,8 +174,8 @@ class NewStream:
         return Stream(list_traces)
 
 class NewTrace:
-    def __init__(self):
-        pass
+    def __init__(self, config):
+        self.config = config
 
     def get_channel(self, trace):
         if 'Z' in trace.stats.location:
@@ -152,9 +186,22 @@ class NewTrace:
             return 'EHN'
         if 'E' in trace.stats.channel:
             return 'EHE'
+        if self.config['default'] == 'win_sinabung':
+            stations = self.config['type']['win_sinabung']['stations']
+            return stations[trace.stats.channel]['channel']
+
+    def get_station(self, trace):
+        if trace.stats.station:
+            return trace.stats.station
+        if self.config['default'] == 'win_sinabung':
+            stations = dict(self.config['type']['win_sinabung']['stations'])
+            if trace.stats.channel in stations:
+                return stations[trace.stats.channel]['station']
+            return trace.stats.channel
         
     def get(self, trace):
         trace.data = np.require(trace.data, dtype=np.int32)
+        trace.stats['station'] = self.get_station(trace).upper()
         trace.stats['network'] = 'VG'
         trace.stats['channel'] = self.get_channel(trace)
         trace.stats['location'] = '00'
@@ -168,6 +215,7 @@ class Convert:
         self.save_spectogram = save_spectogram
         self.config = Configuration(location).get()
         self.search = self.config['default']
+        self.cpu_used = self.config['cpu_used'] if self.config['cpu_used'] < multiprocessing.cpu_count() else int(multiprocessing.cpu_count()/2)
         self.index_directory = self.config['index_directory']
         self.output = self.config['converted_directory']
         self.dayplot_directory = self.config['dayplot_directory']
@@ -179,18 +227,41 @@ class Convert:
         for n in range(int((end_date-start_date).days)+1):
             yield start_date+datetime.timedelta(n)
 
-    def to_mseed(self, use_cpu=2):
+    def to_mseed(self):
         print('Reading configuration....')
-        with Pool(use_cpu) as pool:
-            pool.map(self._to_mseed, self.date_range())
+        if self.cpu_used > 1:
+            print('=== USE multiprocessing ===')
+
+            # threads = []
+            # for date in self.date_range():
+            #     thread = threading.Thread(target=self._to_mseed, args=(date,))
+            #     thread.start()
+            #     threads.append(thread)
+            # for thread in threads:
+            #     thread.join()
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=int(self.cpu_used)) as executor:
+                executor.map(self._to_mseed, self.date_range())
+
+            # with Pool(self.cpu_used) as pool:
+                # [pool.apply_async(self._to_mseed, (date, )) for date in self.date_range()]
+                # pool.map(self._to_mseed, self.date_range())
+                # pool.close()
+                # pool.join()
+        else:
+            print('USE single processing')
+            for date in self.date_range():
+                print(date)
+                self._to_mseed(date)
 
     def _to_mseed(self, date):
         stream = Files().get(date=date, search=self.search)
-        self.save(stream,date)
+        if len(stream) > 0:
+            self.save(stream,date)
 
     def save(self,stream, date):
         for tr in stream:
-            new_trace = NewTrace().get(tr)
+            new_trace = NewTrace(self.config).get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
                 path = SDS().save(self.output,new_trace)
@@ -253,12 +324,13 @@ class SDS:
 
     def save(self, output, trace=Trace):
         filename, path, full_path = self.get_directory(output, trace)
+        print('>> Output : '+full_path)
         if self.file_not_exists(full_path):
             try:
-                trace.write(full_path, format='MSEED', encoding=11)
+                trace.write(full_path, format='MSEED', encoding='STEIM2')
             except:
                 trace.data = trace.data.clip(-2e30, 2e30)
-                trace.write(full_path, format='MSEED')
+                trace.write(full_path, format='MSEED', encoding='STEIM2')
         return os.path.join(path,filename)
 
 class SaveIndex:
@@ -328,40 +400,34 @@ class Plot:
         return starttime, endtime
 
     def save(self, trace, save_dayplot=False, dayplot_directory=None, save_spectogram=False, spectogram_directory=None):
-        title = trace.stats.starttime.strftime('%Y-%m-%d')+' | '+trace.id+' | Sampling Rate: '+str(trace.stats.sampling_rate)+' | '+str(trace.stats.npts)+' samples'
-
+        judul = trace.stats.starttime.strftime('%Y-%m-%d')+' | '+trace.id+' | '+str(trace.stats.sampling_rate)+' Hz | '+str(trace.stats.npts)+' samples'
         if save_dayplot == True:
-            starttime, endtime = self.set_time(trace)
-            filename, path, full_path = SDS().get_directory(dayplot_directory, trace)
+            _, _, full_path = SDS().get_directory(dayplot_directory, trace)
             trace.plot(
                 type='dayplot',
-                starttime=starttime,
-                endtime=endtime,
                 interval=60,
                 one_tick_per_line=True, 
                 color=['k'], 
                 outfile= full_path+'.png', 
                 number_of_ticks=13, 
                 size=(1200,900), 
-                title=title, 
-                show=False
+                title=judul
             )
+            plt.close('all')
 
         if save_spectogram==True:
-            filename, path, full_path = SDS().get_directory(spectogram_directory, trace)
+            _, _, full_path = SDS().get_directory(spectogram_directory, trace)
             trace.spectrogram(
                 outfile=full_path+'.png',
-                title=title,
+                title=judul,
                 show=False,
                 fmt='png'
             )
-            plt.close()
+            plt.close('all')
 
 def main():
     print("Jumlah CPU : ", multiprocessing.cpu_count())
-    cpu = int(multiprocessing.cpu_count()/2)
-    print('CPU yang digunakan: '+str(cpu))
-    Convert(save_to_csv=True, save_dayplot=True, save_spectogram=True).to_mseed(cpu)
+    Convert(save_to_csv=True, save_dayplot=True, save_spectogram=False).to_mseed()
 
 if __name__ == '__main__':
     main()

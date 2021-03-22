@@ -1,9 +1,14 @@
 {
-    "default" : "default",
-    "output_directory" : "Z:\\Output",
+    "default" : "sds",
+    "output_directory" : "G:\\Output1",
+    "cpu_used": 10,
+    "save_to_database" : 0,
+    "save_to_csv" : 1,
+    "save_dayplot" : 1,
+    "save_spectogram" : 0,
     "type" : {
         "default" : {
-            "input_directory" : "F:\\data_earthworm\\continuous\\seisan",
+            "input_directory" : "H:\\data_earthworm\\continuous\\seisan",
             "start_date" : "2017-10-18",
             "end_date" : "2020-01-30"
         },
@@ -14,9 +19,98 @@
             "channels" : ["BCSZ","CLKX","CLKY","CLKZ"]
         },
         "itb" : {
-            "input_directory" : "I:\\Data-Bali-per-10-menit(2)",
-            "start_date" : "2019-02-24",
-            "end_date" : "2019-02-24"
+            "input_directory" : "G:\\Data-Gunung-Agung_dari-Dian\\Termin-1\\DATA BALI",
+            "start_date" : "2018-12-22",
+            "end_date" : "2019-08-31"
+        },
+        "win_sinabung" : {
+            "input_directory" : "H:\\input\\novi",
+            "start_date" : "2020-09-01",
+            "end_date": "2020-09-30",
+            "stations" : {
+                "ac60" : {
+                    "station" : "ac60h",
+                    "channel": "EHZ"
+                },
+                "ac61": {
+                    "station": "ac61h",
+                    "channel": "EHZ"
+                },
+                "ac62": {
+                    "station": "ac62h",
+                    "channel": "EHZ"
+                },
+                "ac63": {
+                    "station": "ac63h",
+                    "channel": "EHZ"
+                },
+                "ac64": {
+                    "station": "ac64h",
+                    "channel": "EHZ"
+                },
+                "ac65": {
+                    "station": "ac65h",
+                    "channel": "EHZ"
+                },
+                "ac66": {
+                    "station": "ac66h",
+                    "channel": "EHZ"
+                },
+                "ac67": {
+                    "station": "ac67h",
+                    "channel": "EHZ"
+                },
+                "ac68": {
+                    "station": "ac68h",
+                    "channel": "EHZ"
+                },
+                "ac69": {
+                    "station": "ac69h",
+                    "channel": "EHZ"
+                },
+                "ac6a": {
+                    "station": "ac6ah",
+                    "channel": "EHZ"
+                },
+                "ac70": {
+                    "station": "ac70h",
+                    "channel": "EHZ"
+                },
+                "ac73": {
+                    "station": "ac73h",
+                    "channel": "EHZ"
+                },
+                "ac74": {
+                    "station": "ac74h",
+                    "channel": "EHZ"
+                },
+                "ac75": {
+                    "station": "ac75h",
+                    "channel": "EHZ"
+                }
+            }
+        },
+        "sds" : {
+            "input_directory": "G:\\Output\\Converted\\SDS",
+            "start_date": "2020-09-01",
+            "end_date": "2020-11-30",
+            "stations" : [
+                "ac60h",
+                "ac61h",
+                "ac62h",
+                "ac63h",
+                "ac64h",
+                "ac65h",
+                "ac66h",
+                "ac67h",
+                "ac68h",
+                "ac69h",
+                "ac6ah",
+                "ac70h",
+                "ac73h",
+                "ac74h",
+                "ac75h"
+            ]
         }
     }
 }
