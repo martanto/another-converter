@@ -1,20 +1,23 @@
 import glob
 import json
 import datetime
-import os
-from obspy import Stream, Trace, read, UTCDateTime
 import numpy as np
 import pandas as pd
-from models.sds_index import SdsIndex
 import multiprocessing
-from multiprocessing import Pool
+import matplotlib
+import os
 import matplotlib.pyplot as plt
 import concurrent.futures
+from obspy import Stream, Trace, read, UTCDateTime
+from models.sds_index import SdsIndex
+from multiprocessing import Pool
+
+matplotlib.use('Agg')
 
 class Configuration:
     '''
     Membaca Konfigurasi File \n
-    Pastikan lokasi file config.json sudah sesuai 
+    Pastikan lokasi file config.json sudah sesuai
     '''
     def __init__(self, default=None, location='config.json'):
         self.default = default
@@ -81,7 +84,22 @@ class Files:
             return stream
         except Exception as e:
             print(e)
-        
+
+    def search_idds(self, date):
+        input_directory = self.config['input_directory']
+        year = date.strftime('%Y')
+        julian_day = date.strftime('%j')
+        try:
+            stream = read(os.path.join(input_directory, year,
+                          'VG', '*', '*', '*', '*'+julian_day+'*'))
+            for trace in stream:
+                if trace.stats.sampling_rate < 50.0:
+                    stream.remove(trace)
+            stream.merge(fill_value=0)
+            return stream
+        except Exception as e:
+            print(e)
+
     def search_sac(self, date):
         search_list = []
         stream_list = []
@@ -144,6 +162,8 @@ class Files:
     def get(self, date, search='default'):
         if search == 'default':
             return self.search_default(date)
+        if search == 'idds':
+            return self.search_idds(date)
         if search == 'sac':
             return self.search_sac(date)
         if search == 'itb':
@@ -198,7 +218,7 @@ class NewTrace:
             if trace.stats.channel in stations:
                 return stations[trace.stats.channel]['station']
             return trace.stats.channel
-        
+
     def get(self, trace):
         trace.data = np.require(trace.data, dtype=np.int32)
         trace.stats['station'] = self.get_station(trace).upper()
@@ -379,7 +399,7 @@ class SaveIndex:
                 'availability' : [values['availability']],
                 'filesize' : [values['filesize']],
             }
-            
+
             df = pd.DataFrame(df)
 
             file_csv = os.path.join(index_directory,attributes['scnl']+'.csv')
@@ -406,19 +426,19 @@ class Plot:
             trace.plot(
                 type='dayplot',
                 interval=60,
-                one_tick_per_line=True, 
-                color=['k'], 
-                outfile= full_path+'.png', 
-                number_of_ticks=13, 
-                size=(1200,900), 
+                one_tick_per_line=True,
+                color=['k'],
+                outfile= '{}.png'.format(full_path),
+                number_of_ticks=13,
+                size=(1200,900),
                 title=judul
             )
             plt.close('all')
 
-        if save_spectogram==True:
+        if save_spectogram == True:
             _, _, full_path = SDS().get_directory(spectogram_directory, trace)
             trace.spectrogram(
-                outfile=full_path+'.png',
+                outfile='{}.png'.format(full_path),
                 title=judul,
                 show=False,
                 fmt='png'

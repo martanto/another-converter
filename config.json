@@ -1,16 +1,21 @@
 {
-    "default" : "sds",
-    "output_directory" : "G:\\Output1",
-    "cpu_used": 10,
+    "default" : "default",
+    "output_directory" : "E:\\Tesis\\Output",
+    "cpu_used": 2,
     "save_to_database" : 0,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
     "type" : {
         "default" : {
-            "input_directory" : "H:\\data_earthworm\\continuous\\seisan",
+            "input_directory" : "E:\\Tesis\\Input\\continuous\\seisan",
             "start_date" : "2017-10-18",
-            "end_date" : "2020-01-30"
+            "end_date" : "2017-12-31"
+        },
+        "idds" : {
+            "input_directory": "E:\\Tesis\\",
+            "start_date": "2017-09-01",
+            "end_date": "2017-12-31"
         },
         "sac" : {
             "input_directory" : "F:\\Continuous",
