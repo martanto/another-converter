@@ -1,8 +1,8 @@
 {
-    "default" : "default",
+    "default" : "ijen",
     "output_directory" : "E:\\Tesis\\Output",
-    "cpu_used": 2,
-    "save_to_database" : 0,
+    "cpu_used": 4,
+    "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
@@ -94,6 +94,11 @@
                     "channel": "EHZ"
                 }
             }
+        },
+        "ijen" : {
+            "input_directory": "F:\\Data\\Seismik Ijen",
+            "start_date": "2021-02-01",
+            "end_date": "2021-02-28"
         },
         "sds" : {
             "input_directory": "G:\\Output\\Converted\\SDS",

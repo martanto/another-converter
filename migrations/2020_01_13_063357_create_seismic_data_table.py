@@ -1,6 +1,6 @@
 from orator.migrations import Migration
 
-class CreateSdsIndexTable(Migration):
+class CreateSeismicDataTable(Migration):
 
     def up(self):
         """
@@ -22,4 +22,4 @@ class CreateSdsIndexTable(Migration):
             table.nullable_timestamps()
 
     def down(self):
-        self.schema.drop_if_exists('sds_indexes')
+        self.schema.drop_if_exists('seismic_data')

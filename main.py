@@ -446,7 +446,7 @@ class Plot:
             plt.close('all')
 
 def main():
-    print("Jumlah CPU : ", multiprocessing.cpu_count())
+    print("Jumlah CPU : ", multiprocessing.`())
     Convert(save_to_csv=True, save_dayplot=True, save_spectogram=False).to_mseed()
 
 if __name__ == '__main__':
