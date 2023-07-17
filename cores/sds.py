@@ -1,10 +1,11 @@
 import os
 from obspy import Trace
+from obspy.clients.filesystem.sds import Client
 
 class SDS:
-    def __init__(self):
-        pass
-
+    def __init__(self, root_dir = None):
+        self.root_dir = root_dir
+        
     def check_directory(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
