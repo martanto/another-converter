@@ -18,6 +18,33 @@ class Files:
             return stream
         except Exception as e:
             print(e)
+            
+    def search_lokon(self, date):
+        input_directory = self.config['input_directory']
+        stations = self.config['stations']
+        file_path = os.path.join(input_directory, "{}-{}".format(date.strftime('%Y-%m-%d'), '*'))
+        
+        # Skipping data with error
+        while True:
+            try:
+                streams = read(file_path, check_compression = False)
+            except Exception as e:
+                # Get error file name
+                file_error = str(e).split('\\')[-1]
+                
+                # Rename it. Add ERROR as prefix
+                new_name = 'ERROR_{}'.format(file_error)
+                os.rename(
+                    os.path.join(input_directory, file_error),
+                    os.path.join(input_directory, new_name)
+                )
+            else:
+                break
+                
+        streams.merge(fill_value=0)
+        new_streams = Stream([streams.select(station=station)[0] for station in stations])
+        return new_streams
+
 
     def search_idds(self, date):
         input_directory = self.config['input_directory']
@@ -132,6 +159,8 @@ class Files:
             return self.search_ijen(date)
         if search == 'sds':
             return self.search_sds(date)
+        if search == 'lokon':
+            return self.search_lokon(date)
         return "Konfigurasi pencarian tidak ditemukan"
 
     def save(self, trace):

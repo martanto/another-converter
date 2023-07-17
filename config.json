@@ -1,8 +1,8 @@
 {
-    "default" : "ijen",
+    "default" : "lokon",
     "output_directory" : "E:\\Tesis\\Output",
-    "cpu_used": 4,
-    "save_to_database" : 1,
+    "cpu_used": 1,
+    "save_to_database" : 0,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
@@ -22,6 +22,12 @@
             "start_date" : "2013-09-11",
             "end_date" : "2014-03-01",
             "channels" : ["BCSZ","CLKX","CLKY","CLKZ"]
+        },
+        "lokon" : {
+            "input_directory" : "E:\\Downloads\\Seismik",
+            "start_date" : "2023-06-13",
+            "end_date" : "2023-06-13",
+            "stations" : ["EMP","MAH","KIN"]
         },
         "itb" : {
             "input_directory" : "G:\\Data-Gunung-Agung_dari-Dian\\Termin-1\\DATA BALI",
@@ -97,30 +103,13 @@
         },
         "ijen" : {
             "input_directory": "F:\\Data\\Seismik Ijen",
-            "start_date": "2021-02-01",
-            "end_date": "2021-02-28"
+            "start_date": "2019-01-01",
+            "end_date": "2021-12-31"
         },
         "sds" : {
             "input_directory": "G:\\Output\\Converted\\SDS",
             "start_date": "2020-09-01",
-            "end_date": "2020-11-30",
-            "stations" : [
-                "ac60h",
-                "ac61h",
-                "ac62h",
-                "ac63h",
-                "ac64h",
-                "ac65h",
-                "ac66h",
-                "ac67h",
-                "ac68h",
-                "ac69h",
-                "ac6ah",
-                "ac70h",
-                "ac73h",
-                "ac74h",
-                "ac75h"
-            ]
+            "end_date": "2020-11-30"
         }
     }
 }
