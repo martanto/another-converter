@@ -3,6 +3,7 @@ import pandas as pd
 from config.config import Configuration
 from obspy import read
 from models.SeismicData import SeismicData
+import numpy.ma as ma
 
 class SaveIndex:
     def __init__(self):
@@ -16,7 +17,10 @@ class SaveIndex:
         return float(round(trace.stats.sampling_rate, 2))
 
     def get_availability(self,trace):
-        availability = float(round(trace.stats.npts/(trace.stats.sampling_rate*3600*24)*100,2))
+        masked_count = ma.count_masked(trace.data)
+        availability = float(
+            round((trace.stats.npts - masked_count)/(trace.stats.sampling_rate*3600*24)*100,2)
+		)
         return availability
 
     def get_filesize(self,filename):

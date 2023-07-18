@@ -15,7 +15,7 @@ class Files:
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
-            stream.merge(fill_value=0)
+            stream.merge()
             return stream
         except Exception as e:
             print(e)
@@ -45,7 +45,7 @@ class Files:
         # Check merging error
         while True:
             try:
-                streams.merge(fill_value=0)
+                streams.merge()
                 new_streams = Stream([streams.select(station=station)[0] for station in stations])               
             except Exception as e:
                 for f in glob.glob(file_path, recursive=False):
@@ -78,7 +78,7 @@ class Files:
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
-            stream.merge(fill_value=0)
+            stream.merge()
             return stream
         except Exception as e:
             print(e)
@@ -117,7 +117,7 @@ class Files:
                     new_stream+=read_stream
                 except:
                     print('Error : '+stream)
-        new_stream.merge(fill_value=0)
+        new_stream.merge()
         return new_stream
 
     def search_win_sinabung(self, date):
@@ -126,7 +126,7 @@ class Files:
         input_directory = os.path.join(self.config['input_directory'], year_month, year_month_day)
         print('==== Reading ALL one minute files ====')
         streams = read(os.path.join(input_directory, '*','*'))
-        stream = streams.merge(fill_value=0)
+        stream = streams.merge()
         return stream
     
     def search_ijen(self, date):
@@ -145,7 +145,7 @@ class Files:
                 except:
                     pass
                     
-                stream.merge(fill_value=0)
+                stream.merge()
                 return stream
             except Exception as e:
                 print(e)
