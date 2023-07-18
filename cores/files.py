@@ -1,6 +1,7 @@
 from config.config import Configuration
 from obspy import read, Stream
 import os
+import glob
 
 class Files:
     ''' Mendapatkan semua files sesuai konfigurasi pencarian '''
@@ -27,7 +28,7 @@ class Files:
         # Skipping data with error
         while True:
             try:
-                streams = read(file_path, check_compression = False)
+                streams = read(file_path, check_compression = False) 
             except Exception as e:
                 # Get error file name
                 file_error = str(e).split('\\')[-1]
@@ -40,10 +41,31 @@ class Files:
                 )
             else:
                 break
-                
-        streams.merge(fill_value=0)
-        new_streams = Stream([streams.select(station=station)[0] for station in stations])
-        return new_streams
+
+        # Check merging error
+        while True:
+            try:
+                streams.merge(fill_value=0)
+                new_streams = Stream([streams.select(station=station)[0] for station in stations])               
+            except Exception as e:
+                for f in glob.glob(file_path, recursive=False):
+                    
+                    stream = read(f, headonly = True, check_compression = False)
+                    for trace in stream:
+                        if trace.stats.sampling_rate < 50.0:
+                            new_name = 'ERROR_{}'.format(f.split('\\')[-1])
+                            print(">> FILE ERROR : {}".format(os.path.join(input_directory, new_name)))
+                            os.rename(
+                                os.path.join(input_directory, f),
+                                os.path.join(input_directory, new_name)
+                            )
+                            break
+                            
+                streams = read(file_path, check_compression = False)
+            else:
+                return new_streams
+
+        return Stream()
 
 
     def search_idds(self, date):
