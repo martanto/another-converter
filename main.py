@@ -9,7 +9,7 @@ import os
 import matplotlib.pyplot as plt
 import concurrent.futures
 from obspy import Stream, Trace, read, UTCDateTime
-from models.sds_index import SdsIndex
+from models.SeismicData import SdsIndex
 from multiprocessing import Pool
 
 matplotlib.use('Agg')
@@ -446,7 +446,7 @@ class Plot:
             plt.close('all')
 
 def main():
-    print("Jumlah CPU : ", multiprocessing.`())
+    # print("Jumlah CPU : ", config.multiprocessing.`())
     Convert(save_to_csv=True, save_dayplot=True, save_spectogram=False).to_mseed()
 
 if __name__ == '__main__':
