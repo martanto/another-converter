@@ -3,8 +3,8 @@ from obspy import UTCDateTime
 from cores.sds import SDS
 
 class Plot:
-    def __init__(self):
-        pass
+    def __init__(self, overwrite=False):
+        self.overwrite = overwrite
 
     def set_time(self, trace):
         date = trace.stats.starttime.strftime('%Y-%m-%d')

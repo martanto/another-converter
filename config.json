@@ -25,8 +25,8 @@
         },
         "lokon" : {
             "input_directory" : "E:\\Downloads\\Seismik",
-            "start_date" : "2023-01-01",
-            "end_date" : "2023-01-12",
+            "start_date" : "2023-01-10",
+            "end_date" : "2023-01-10",
             "stations" : ["EMP","MAH","KIN"]
         },
         "itb" : {

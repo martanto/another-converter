@@ -1,14 +1,19 @@
 import os
 import pandas as pd
+import numpy as np
 from config.config import Configuration
 from obspy import read
 from models.SeismicData import SeismicData
-import numpy.ma as ma
 
 class SaveIndex:
-    def __init__(self):
-        pass
+    def __init__(self, overwrite=False):
+        self.overwrite = overwrite
 
+    def _count_zero_or_nan_value(self, trace):
+        count_nan = np.count_nonzero(np.isnan(trace.data))
+        count_zero = np.count_nonzero(trace.data==0)
+        return count_nan+count_zero
+    
     def get_scnl(self,trace):
         scnl = trace.stats.station+'_'+trace.stats.channel+'_'+trace.stats.network+'_'+trace.stats.location
         return scnl
@@ -17,9 +22,9 @@ class SaveIndex:
         return float(round(trace.stats.sampling_rate, 2))
 
     def get_availability(self,trace):
-        masked_count = ma.count_masked(trace.data)
+        count_zero_or_nan_value = self._count_zero_or_nan_value(trace)
         availability = float(
-            round((trace.stats.npts - masked_count)/(trace.stats.sampling_rate*3600*24)*100,2)
+            round((trace.stats.npts - count_zero_or_nan_value)/(trace.stats.sampling_rate*3600*24)*100,2)
 		)
         return availability
 
@@ -71,5 +76,7 @@ class SaveIndex:
 
             if not os.path.isfile(file_csv):
                 df.to_csv(file_csv, header=['scnl','date','sampling_rate','max_amplitude','availability','filesize'], index=False)
+            elif self.overwrite:
+                df.to_csv(file_csv, header=['scnl','date','sampling_rate','max_amplitude','availability','filesize'], index=False, mode='w+')
             else:
                 df.to_csv(file_csv, mode='a', header=False, index=False)

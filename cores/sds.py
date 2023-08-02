@@ -1,10 +1,13 @@
 import os
 from obspy import Trace
 from obspy.clients.filesystem.sds import Client
+import numpy as np
+import pandas as pd
 
 class SDS:
-    def __init__(self, root_dir = None):
+    def __init__(self, root_dir = None, overwrite=False):
         self.root_dir = root_dir
+        self.overwrite = overwrite
         
     def check_directory(self, directory):
         if not os.path.exists(directory):
@@ -47,13 +50,24 @@ class SDS:
         full_path = os.path.join(output,path,filename)
         return filename, path, full_path
 
-    def save(self, output, trace=Trace):
+    def _converting_masked_array_to_pandas_then_to_numpy_array(self, trace_masked_array_data):
+        return pd.DataFrame(trace_masked_array_data)[0].to_numpy(dtype=np.float32)
+
+    def save(self, output, trace=Trace, encoding='STEIM2'):
         filename, path, full_path = self.get_directory(output, trace)
-        print('>> Output : '+full_path)
-        if self.file_not_exists(full_path):
+        
+        if self.file_not_exists(full_path) or self.overwrite:
+            if isinstance(trace.data, np.ma.masked_array):
+                trace.data = self._converting_masked_array_to_pandas_then_to_numpy_array(trace.data)
+                encoding = 'FLOAT32'
             try:
-                trace.write(full_path, format='MSEED', encoding='STEIM2')
-            except:
+                trace.write(full_path, format='MSEED', encoding=encoding)
+            except:                   
                 trace.data = trace.data.clip(-2e30, 2e30)
-                trace.write(full_path, format='MSEED', encoding='STEIM2')
+                trace.write(full_path, format='MSEED', encoding=encoding)
+
+        is_overwrite = '(overwrite)' if self.overwrite else ''
+
+        print('>> Output {}: {}'.format(is_overwrite, full_path))
+        
         return os.path.join(path,filename)
