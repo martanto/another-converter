@@ -1,8 +1,8 @@
 {
-    "default" : "lokon",
-    "output_directory" : "E:\\Tesis\\Output",
+    "default" : "ijen",
+    "output_directory" : "F:\\Output",
     "cpu_used": 1,
-    "save_to_database" : 0,
+    "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
@@ -25,8 +25,8 @@
         },
         "lokon" : {
             "input_directory" : "E:\\Downloads\\Seismik",
-            "start_date" : "2023-06-13",
-            "end_date" : "2023-06-13",
+            "start_date" : "2023-01-01",
+            "end_date" : "2023-01-12",
             "stations" : ["EMP","MAH","KIN"]
         },
         "itb" : {
@@ -102,8 +102,13 @@
             }
         },
         "ijen" : {
-            "input_directory": "F:\\Data\\Seismik Ijen",
-            "start_date": "2019-01-01",
+            "input_directory": "F:\\Backup Continuous",
+            "start_date": "2022-02-01",
+            "end_date": "2022-02-28"
+        },
+        "krakatau": {
+            "input_directory": "F:\\Anak Krakatau\\SAC",
+            "start_date": "2018-01-01",
             "end_date": "2021-12-31"
         },
         "sds" : {

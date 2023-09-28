@@ -11,7 +11,7 @@ class Configuration:
     def __init__(self, default='default', location='config.json'):
         self.parent_directory = os.path.dirname(os.getcwd())
         self.default = default
-        self.location = os.path.join(self.parent_directory, 'another-converter', 'config.json')
+        self.location = os.path.join(os.getcwd(), 'config.json')
         
     def set_location(self, location):
         self.location = location

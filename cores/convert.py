@@ -9,7 +9,16 @@ from config.config import Configuration
 from multiprocessing import Pool
 
 class Convert:
-    def __init__(self, location='config.json', save_to_database=False, save_to_csv=False, save_dayplot=False, save_spectogram=False):
+    def __init__(
+        self, 
+        location='config.json',
+        save_to_database=False,
+        save_to_csv=False,
+        save_dayplot=False,
+        save_spectogram=False,
+        overwrite=False,
+        fill_value=None
+    ):
         self.save_index = save_to_database
         self.save_csv = save_to_csv
         self.save_dayplot = save_dayplot
@@ -21,6 +30,8 @@ class Convert:
         self.output = self.config['converted_directory']
         self.dayplot_directory = self.config['dayplot_directory']
         self.spectogram_directory = self.config['spectogram_directory']
+        self.overwrite=overwrite
+        self.fill_value = fill_value
 
     def date_range(self):
         start_date = self.config['start_date']
@@ -58,7 +69,7 @@ class Convert:
                 self._to_mseed(date)
 
     def _to_mseed(self, date):
-        stream = Files().get(date=date, search=self.search)
+        stream = Files(fill_value=self.fill_value).get(date=date, search=self.search)
         if len(stream) > 0:
             self.save(stream,date)
         else:
@@ -69,11 +80,11 @@ class Convert:
             new_trace = NewTrace(self.config).get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
-                path = SDS().save(self.output,new_trace)
+                path = SDS(overwrite=self.overwrite).save(self.output,new_trace)
                 if self.save_index:
                     SaveIndex().save(path, new_trace, date, db=True)
                 if self.save_csv==True:
-                    SaveIndex().save(path, new_trace, date, csv=True, index_directory=self.index_directory)
+                    SaveIndex(overwrite=self.overwrite).save(path, new_trace, date, csv=True, index_directory=self.index_directory)
                 if self.save_dayplot==True:
                     Plot().save(trace=new_trace, save_dayplot=True, dayplot_directory=self.dayplot_directory)
                 if self.save_spectogram==True:

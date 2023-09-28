@@ -1,0 +1,1 @@
+@CALL "C:\Users\Anto\anaconda3\Scripts\activate.bat" converter

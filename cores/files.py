@@ -1,11 +1,16 @@
 from config.config import Configuration
 from obspy import read, Stream
 import os
+import glob
 
 class Files:
     ''' Mendapatkan semua files sesuai konfigurasi pencarian '''
-    def __init__(self):
+    def __init__(self, fill_value=None):
         self.config = Configuration().get()
+        self.fill_value = fill_value
+
+    def _merge(self, stream):
+        return stream.merge(fill_value=self.fill_value)
 
     def search_default(self, date):
         input_directory = self.config['input_directory']
@@ -14,8 +19,7 @@ class Files:
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
-            stream.merge(fill_value=0)
-            return stream
+            return self._merge(stream)
         except Exception as e:
             print(e)
             
@@ -27,7 +31,7 @@ class Files:
         # Skipping data with error
         while True:
             try:
-                streams = read(file_path, check_compression = False)
+                streams = read(file_path, check_compression = False) 
             except Exception as e:
                 # Get error file name
                 file_error = str(e).split('\\')[-1]
@@ -40,10 +44,31 @@ class Files:
                 )
             else:
                 break
-                
-        streams.merge(fill_value=0)
-        new_streams = Stream([streams.select(station=station)[0] for station in stations])
-        return new_streams
+
+        # Check merging error
+        while True:
+            try:
+                streams = self._merge(streams)
+                new_streams = Stream([streams.select(station=station)[0] for station in stations])               
+            except Exception as e:
+                for f in glob.glob(file_path, recursive=False):
+                    
+                    stream = read(f, headonly = True, check_compression = False)
+                    for trace in stream:
+                        if trace.stats.sampling_rate < 50.0:
+                            new_name = 'ERROR_{}'.format(f.split('\\')[-1])
+                            print(">> SKIPPING FILE ERROR : {}".format(os.path.join(input_directory, new_name)))
+                            os.rename(
+                                os.path.join(input_directory, f),
+                                os.path.join(input_directory, new_name)
+                            )
+                            break
+                            
+                streams = read(file_path, check_compression = False)
+            else:
+                return new_streams
+
+        return Stream()
 
 
     def search_idds(self, date):
@@ -56,8 +81,8 @@ class Files:
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
-            stream.merge(fill_value=0)
-            return stream
+
+            return self._merge(stream)
         except Exception as e:
             print(e)
 
@@ -95,8 +120,8 @@ class Files:
                     new_stream+=read_stream
                 except:
                     print('Error : '+stream)
-        new_stream.merge(fill_value=0)
-        return new_stream
+
+        return self._merge(new_stream)
 
     def search_win_sinabung(self, date):
         year_month = date.strftime('%y%m')
@@ -104,7 +129,7 @@ class Files:
         input_directory = os.path.join(self.config['input_directory'], year_month, year_month_day)
         print('==== Reading ALL one minute files ====')
         streams = read(os.path.join(input_directory, '*','*'))
-        stream = streams.merge(fill_value=0)
+        stream = self._merge(streams)
         return stream
     
     def search_ijen(self, date):
@@ -123,13 +148,11 @@ class Files:
                 except:
                     pass
                     
-                stream.merge(fill_value=0)
-                return stream
+                return self._merge(stream)
             except Exception as e:
                 print(e)
         
         return Stream()
-
 
     def search_sds(self, date):
         config = self.config['type']['sds']
