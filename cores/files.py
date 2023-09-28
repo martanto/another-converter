@@ -154,7 +154,6 @@ class Files:
         
         return Stream()
 
-
     def search_sds(self, date):
         config = self.config['type']['sds']
         year = date.strftime('%Y')
