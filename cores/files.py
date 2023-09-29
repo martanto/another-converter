@@ -2,6 +2,10 @@ from config.config import Configuration
 from obspy import read, Stream
 import os
 import glob
+import warnings
+import datetime
+
+warnings.filterwarnings('error')
 
 class Files:
     ''' Mendapatkan semua files sesuai konfigurasi pencarian '''
@@ -10,7 +14,15 @@ class Files:
         self.fill_value = fill_value
 
     def _merge(self, stream):
-        return stream.merge(fill_value=self.fill_value)
+        try:
+            stream.merge(fill_value=self.fill_value)
+        except:
+            for trace in stream:
+                if trace.stats.sampling_rate < 50.0:
+                    stream.remove(trace)
+                    print('Trace {} removed'.format(trace))
+            stream.merge(fill_value=self.fill_value)
+        return stream
 
     def search_default(self, date):
         input_directory = self.config['input_directory']
@@ -136,22 +148,27 @@ class Files:
         input_directory = self.config['input_directory']
         year = date.strftime('%Y')
         directory = date.strftime('%Y%m%d')
+        next_directory = (date + datetime.timedelta(days=1)).strftime('%Y%m%d')
         year_month_date = date.strftime('%Y-%m-%d')
 
         if os.path.exists(os.path.join(input_directory, year, directory)):
+            
+            stream = read(os.path.join(input_directory, year, directory, '*','{}*'.format(year_month_date)))
+
             try:
-                stream = read(os.path.join(input_directory, year, directory, '*','{}*'.format(year_month_date)))
+                stream_last = read(os.path.join(input_directory, year, next_directory, '*','{}-2350-*'.format(year_month_date)))
+                stream+=stream_last
+            except:
+                pass
+
+            for trace in stream:
+                if trace.stats.sampling_rate < 50.0:
+                    stream.remove(trace)
+                    print('Trace {} removed'.format(trace))
                 
-                try:
-                    stream_last = read(os.path.join(input_directory, year, directory, '*','*-2350-*'))
-                    stream+=stream_last
-                except:
-                    pass
-                    
-                return self._merge(stream)
-            except Exception as e:
-                print(e)
-        
+            stream.merge(fill_value=self.fill_value)
+            return stream
+            
         return Stream()
 
     def search_sds(self, date):
@@ -210,6 +227,9 @@ class NewTrace:
         self.config = config
 
     def get_channel(self, trace):
+        # Buat Ijen
+        if 'BH' in trace.stats.channel:
+            return 'BH{}'.format(trace.stats.location)
         if 'Z' in trace.stats.location:
             return 'EHZ'
         if 'Z' in trace.stats.channel:

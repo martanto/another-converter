@@ -1,6 +1,7 @@
 import datetime
 import multiprocessing
 import concurrent.futures
+import numpy as np
 from cores.files import Files, NewTrace
 from cores.sds import SDS
 from cores.plot import Plot
@@ -80,15 +81,17 @@ class Convert:
             new_trace = NewTrace(self.config).get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
+                maximum = float(abs(new_trace.max()))
                 path = SDS(overwrite=self.overwrite).save(self.output,new_trace)
                 if self.save_index:
-                    SaveIndex().save(path, new_trace, date, db=True)
+                    SaveIndex(maximum=maximum).save(path, new_trace, date, db=True)
                 if self.save_csv==True:
-                    SaveIndex(overwrite=self.overwrite).save(path, new_trace, date, csv=True, index_directory=self.index_directory)
+                    SaveIndex(overwrite=self.overwrite, maximum = maximum).save(path, new_trace, date, csv=True, index_directory=self.index_directory)
                 if self.save_dayplot==True:
                     Plot().save(trace=new_trace, save_dayplot=True, dayplot_directory=self.dayplot_directory)
                 if self.save_spectogram==True:
                     Plot().save(trace=new_trace, save_spectogram=True, spectogram_directory=self.spectogram_directory)
+                del new_trace
             else:
                 print('Skipped '+date.strftime('%Y-%m-%d'))
         print(':: '+date.strftime('%Y-%m-%d')+' DONE!!')

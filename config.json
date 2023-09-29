@@ -1,7 +1,7 @@
 {
     "default" : "ijen",
-    "output_directory" : "F:\\Output",
-    "cpu_used": 1,
+    "output_directory" : "Z:\\Output",
+    "cpu_used": 4,
     "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
@@ -102,9 +102,9 @@
             }
         },
         "ijen" : {
-            "input_directory": "F:\\Backup Continuous",
-            "start_date": "2022-02-01",
-            "end_date": "2022-02-28"
+            "input_directory": "Z:\\Backup Continuous",
+            "start_date": "2023-01-01",
+            "end_date": "2023-07-31"
         },
         "krakatau": {
             "input_directory": "F:\\Anak Krakatau\\SAC",

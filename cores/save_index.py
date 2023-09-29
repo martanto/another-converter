@@ -6,8 +6,9 @@ from obspy import read
 from models.SeismicData import SeismicData
 
 class SaveIndex:
-    def __init__(self, overwrite=False):
+    def __init__(self, overwrite=False, maximum = 0):
         self.overwrite = overwrite
+        self.maximum = maximum
 
     def _count_zero_or_nan_value(self, trace):
         count_nan = np.count_nonzero(np.isnan(trace.data))
@@ -37,12 +38,12 @@ class SaveIndex:
         exists = SeismicData.where('scnl', attributes['scnl']).where('date', attributes['date']).first()
         if not exists:
             merged_attributes_values = {**attributes, **values}
-            print("==> Database CREATED")
-            return SeismicData.create(merged_attributes_values)
+            SeismicData.create(merged_attributes_values)
+            return print("==> Database CREATED")
         print("==> Database UPDATED")
         return exists.update(values)
 
-    def save(self, filename, trace, date, db=False, csv=False, index_directory=None):
+    def save(self, filename, trace, date, db=False, csv=False, index_directory=None):       
         attributes = {
             'scnl':self.get_scnl(trace),
             'date':date.strftime('%Y-%m-%d'),
@@ -51,7 +52,7 @@ class SaveIndex:
         values = {
             'filename':filename,
             'sampling_rate':self.get_sampling_rate(trace),
-            'max_amplitude':float(abs(trace.max())),
+            'max_amplitude':self.maximum,
             'availability':self.get_availability(trace),
             'filesize':self.get_filesize(filename)
         }
