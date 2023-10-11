@@ -88,8 +88,10 @@ class Files:
         year = date.strftime('%Y')
         julian_day = date.strftime('%j')
         try:
-            stream = read(os.path.join(input_directory, year,
-                          'VG', '*', '*', '*', '*'+julian_day+'*'))
+            directory = os.path.join(input_directory, year,
+                          'VG', '*', '*', julian_day, '*')
+            print(directory)
+            stream = read(directory)
             for trace in stream:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
