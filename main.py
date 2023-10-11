@@ -12,7 +12,7 @@ from numpy import ma
 
 def main():
     Convert(
-        save_to_database=True,
+        save_to_database=False,
         save_to_csv=True,
         save_dayplot=True,
         save_spectogram=False
