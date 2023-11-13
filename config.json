@@ -1,11 +1,12 @@
 {
     "default" : "idds",
-    "output_directory" : "D:\\Temp\\MSEED\\Output",
-    "cpu_used": 1,
-    "save_to_database" : 0,
+    "output_directory" : "H:\\Output",
+    "cpu_used": 8,
+    "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
+    "code": "SMR",
     "type" : {
         "default" : {
             "input_directory" : "E:\\Tesis\\Input\\continuous\\seisan",
@@ -13,9 +14,10 @@
             "end_date" : "2017-12-31"
         },
         "idds" : {
-            "input_directory": "D:\\Temp\\MSEED",
-            "start_date": "2023-01-01",
-            "end_date": "2023-01-03"
+            "input_directory": "I:\\SEMERU\\MSEED",
+            "start_date": "2018-05-16",
+            "end_date": "2023-12-03",
+            "stations": ["LEKR"]
         },
         "sac" : {
             "input_directory" : "F:\\Continuous",

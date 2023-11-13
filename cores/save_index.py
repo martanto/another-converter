@@ -4,6 +4,7 @@ import numpy as np
 from config.config import Configuration
 from obspy import read
 from models.SeismicData import SeismicData
+from models.SeismicChannel import SeismicChannel
 
 class SaveIndex:
     def __init__(self, overwrite=False, maximum = 0):
@@ -24,9 +25,8 @@ class SaveIndex:
 
     def get_availability(self,trace):
         count_zero_or_nan_value = self._count_zero_or_nan_value(trace)
-        availability = float(
-            round((trace.stats.npts - count_zero_or_nan_value)/(trace.stats.sampling_rate*3600*24)*100,2)
-		)
+        availability = float(round((trace.stats.npts - count_zero_or_nan_value)/(trace.stats.sampling_rate*3600*24)*100,2))
+
         return availability
 
     def get_filesize(self,filename):
@@ -34,7 +34,15 @@ class SaveIndex:
         trace = read(file_mseed)[0]
         return trace.stats.mseed.filesize
     
-    def update_or_create(self, attributes, values):
+    def update_or_create(self, attributes, values, code):
+        channel_exists = SeismicChannel.where('code', code).where('scnl', attributes['scnl']).first()
+        if not channel_exists:
+            SeismicChannel.create({
+                'code' : code,
+                'scnl' : attributes['scnl'],
+                'is_active' : 1
+            })
+            
         exists = SeismicData.where('scnl', attributes['scnl']).where('date', attributes['date']).first()
         if not exists:
             merged_attributes_values = {**attributes, **values}
@@ -43,7 +51,7 @@ class SaveIndex:
         print("==> Database UPDATED")
         return exists.update(values)
 
-    def save(self, filename, trace, date, db=False, csv=False, index_directory=None):       
+    def save(self, filename, trace, date, db=False, code=None, csv=False, index_directory=None):
         attributes = {
             'scnl':self.get_scnl(trace),
             'date':date.strftime('%Y-%m-%d'),
@@ -59,7 +67,7 @@ class SaveIndex:
         
 
         if db:
-            self.update_or_create(attributes, values)
+            self.update_or_create(attributes, values, code)
 
         if csv:
             df = {

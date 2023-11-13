@@ -48,7 +48,8 @@ class Configuration:
                 'spectogram_directory' : os.path.join(output_directory, 'Spectogram'),
                 'channels' : load_config['type'][get_config]['channels'] if get_config == 'sac' else [],
                 'stations' : load_config['type'][get_config]['stations'] if get_config == 'lokon' else [],
-                'type': load_config['type']
+                'type': load_config['type'],
+                'code': load_config['code'],
             }
 
             self.check_directory(config['output_directory'])
