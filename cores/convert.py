@@ -33,37 +33,39 @@ class Convert:
         self.spectogram_directory = self.config['spectogram_directory']
         self.overwrite=overwrite
         self.fill_value = fill_value
+        self.code = self.config['code']
 
     def date_range(self):
         start_date = self.config['start_date']
         end_date = self.config['end_date']
         for n in range(int((end_date-start_date).days)+1):
             yield start_date+datetime.timedelta(n)
+            
+    def _date_range(self):
+        start_date = self.config['start_date']
+        end_date = self.config['end_date']
+        
+        dates = [start_date+datetime.timedelta(n) for n in range(int((end_date-start_date).days)+1)]
+        return dates
 
     def to_mseed(self):
         print('Reading configuration....')
         if self.cpu_used > 1:
             print('=== USE multiprocessing ===')
-            # threads = []
-            # for date in self.date_range():
-            #     thread = threading.Thread(target=self._to_mseed, args=(date,))
-            #     thread.start()
-            #     threads.append(thread)
-            # for thread in threads:
-            #     thread.join()
-
-            with concurrent.futures.ProcessPoolExecutor(max_workers=int(self.cpu_used)) as executor:
-                executor.map(self._to_mseed, self.date_range())
-
-            # with Pool(self.cpu_used) as pool:
-                # [pool.apply_async(self._to_mseed, (date, )) for date in self.date_range()]
-                # pool.map(self._to_mseed, self.date_range())
-                # pool.close()
-                # pool.join()
+                
+            dates = self._date_range()
+                
+            with Pool(self.cpu_used) as pool:
+                pool.map(self._to_mseed, dates)
+                pool.close()
+                pool.join()
 
         else:
             print('USE single processing')
-            for date in self.date_range():
+            
+            dates = self._date_range()
+            
+            for date in dates:
                 print('==================================')
                 print('Converting date: {}'.format(date))
                 print('==================================')
@@ -84,7 +86,7 @@ class Convert:
                 maximum = float(abs(new_trace.max()))
                 path = SDS(overwrite=self.overwrite).save(self.output,new_trace)
                 if self.save_index:
-                    SaveIndex(maximum=maximum).save(path, new_trace, date, db=True)
+                    SaveIndex(maximum=maximum).save(path, new_trace, date, db=True, code=self.code)
                 if self.save_csv==True:
                     SaveIndex(overwrite=self.overwrite, maximum = maximum).save(path, new_trace, date, csv=True, index_directory=self.index_directory)
                 if self.save_dayplot==True:
