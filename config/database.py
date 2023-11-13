@@ -3,12 +3,12 @@ from masoniteorm.connections import ConnectionResolver
 DATABASES = {
   "default": "mysql",
   "mysql": {
-    "host": "localhost",
+    "host": "127.0.0.1",
     "driver": "mysql",
     "database": "seismic",
-    "user": "root",
-    "password": "",
-    "port": 3306,
+    "user": "homestead",
+    "password": "secret",
+    "port": 33060,
     "log_queries": False,
   }
 }
