@@ -48,6 +48,8 @@ class SDS:
 
         self.check_directory(os.path.join(output,path))
         full_path = os.path.join(output,path,filename)
+        path = os.path.join(output,path)
+        
         return filename, path, full_path
 
     def _converting_masked_array_to_pandas_then_to_numpy_array(self, trace_masked_array_data):
