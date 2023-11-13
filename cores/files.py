@@ -84,6 +84,8 @@ class Files:
 
 
     def search_idds(self, date):
+        config = self.config['type']['idds']
+        stations = config['stations']
         input_directory = self.config['input_directory']
         year = date.strftime('%Y')
         julian_day = date.strftime('%j')
@@ -96,9 +98,11 @@ class Files:
                 if trace.stats.sampling_rate < 50.0:
                     stream.remove(trace)
 
-            return self._merge(stream)
+            streams = self._merge(stream)
+            return Stream([streams.select(station=station)[0] for station in stations])
         except Exception as e:
             print(e)
+            return Stream()
 
     def search_sac(self, date):
         search_list = []
