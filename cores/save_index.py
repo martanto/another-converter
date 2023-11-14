@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from config.config import Configuration
+from cores.sds import SDS
 from obspy import read
 from models.SeismicData import SeismicData
 from models.SeismicChannel import SeismicChannel
@@ -10,6 +11,8 @@ class SaveIndex:
     def __init__(self, overwrite=False, maximum = 0):
         self.overwrite = overwrite
         self.maximum = maximum
+        self.config = Configuration().get()
+        self.code = self.config['code']
 
     def _count_zero_or_nan_value(self, trace):
         count_nan = np.count_nonzero(np.isnan(trace.data))
@@ -30,15 +33,15 @@ class SaveIndex:
         return availability
 
     def get_filesize(self,filename):
-        file_mseed = os.path.join(Configuration().get()['converted_directory'], filename)
+        file_mseed = os.path.join(self.config['converted_directory'], filename)
         trace = read(file_mseed)[0]
         return trace.stats.mseed.filesize
     
-    def update_or_create(self, attributes, values, code):
-        channel_exists = SeismicChannel.where('code', code).where('scnl', attributes['scnl']).first()
+    def update_or_create(self, attributes, values):
+        channel_exists = SeismicChannel.where('scnl', attributes['scnl']).first()
         if not channel_exists:
             SeismicChannel.create({
-                'code' : code,
+                'code' : self.code,
                 'scnl' : attributes['scnl'],
                 'is_active' : 1
             })
@@ -50,6 +53,38 @@ class SaveIndex:
             return print("==> Database CREATED")
         print("==> Database UPDATED")
         return exists.update(values)
+
+    def update(self, filename, trace):
+        scnl = self.get_scnl(trace)
+        date = trace.stats.starttime.strftime('%Y-%m-%d')
+
+        channels = {
+            'scnl' : scnl,
+            'is_active' : 1
+        }
+        
+        data = {
+            'scnl' : scnl,
+            'date' : date,
+            'filename' : filename,
+            'sampling_rate' : self.get_sampling_rate(trace),
+            'max_amplitude' : float(abs(trace.max())),
+            'availability' : self.get_availability(trace),
+            'filesize' : trace.stats.mseed.filesize
+        }
+
+        channel = SeismicChannel.where('scnl', scnl).first()
+        seismic_data = SeismicData.where('scnl', scnl).where('date', date).first()
+
+        status = 'new' if not seismic_data else 'old'
+        
+        SeismicChannel.create(channels) if not channel else channel.update(channels)
+        SeismicData.create(data) if not seismic_data else seismic_data.update(data)
+
+        info_txt = '{} {} {}'.format(date, scnl, status)
+        log_txt = '{},{},{}'.format(date, scnl, status)
+        
+        return info_txt, log_txt
 
     def save(self, filename, trace, date, db=False, code=None, csv=False, index_directory=None):
         attributes = {
@@ -67,7 +102,7 @@ class SaveIndex:
         
 
         if db:
-            self.update_or_create(attributes, values, code)
+            self.update_or_create(attributes, values)
 
         if csv:
             df = {

@@ -28,7 +28,8 @@ class Convert:
         self.search = self.config['default']
         self.cpu_used = self.config['cpu_used'] if self.config['cpu_used'] < multiprocessing.cpu_count() else int(multiprocessing.cpu_count()/2)
         self.index_directory = self.config['index_directory']
-        self.output = self.config['converted_directory']
+        self.output = self.config['output_directory']
+        self.converted = self.config['converted_directory']
         self.dayplot_directory = self.config['dayplot_directory']
         self.spectogram_directory = self.config['spectogram_directory']
         self.overwrite=overwrite
@@ -84,9 +85,9 @@ class Convert:
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
                 maximum = float(abs(new_trace.max()))
-                path = SDS(overwrite=self.overwrite).save(self.output,new_trace)
+                path = SDS(overwrite=self.overwrite).save(self.converted,new_trace)
                 if self.save_index:
-                    SaveIndex(maximum=maximum).save(path, new_trace, date, db=True, code=self.code)
+                    SaveIndex(maximum=maximum).save(path, new_trace, date, db=True)
                 if self.save_csv==True:
                     SaveIndex(overwrite=self.overwrite, maximum = maximum).save(path, new_trace, date, csv=True, index_directory=self.index_directory)
                 if self.save_dayplot==True:
