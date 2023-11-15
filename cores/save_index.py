@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+import math
 from config.config import Configuration
 from cores.sds import SDS
 from obspy import read
@@ -57,29 +58,31 @@ class SaveIndex:
     def update(self, filename, trace):
         scnl = self.get_scnl(trace)
         date = trace.stats.starttime.strftime('%Y-%m-%d')
+        maximum = np.nanmax(trace.data)
 
         channels = {
             'scnl' : scnl,
             'is_active' : 1
         }
         
-        data = {
+        attributes = {
             'scnl' : scnl,
             'date' : date,
+        }
+        
+        values = {
             'filename' : filename,
             'sampling_rate' : self.get_sampling_rate(trace),
-            'max_amplitude' : float(abs(trace.max())),
+            'max_amplitude' : maximum,
             'availability' : self.get_availability(trace),
             'filesize' : trace.stats.mseed.filesize
         }
-
-        channel = SeismicChannel.where('scnl', scnl).first()
+        
         seismic_data = SeismicData.where('scnl', scnl).where('date', date).first()
-
         status = 'new' if not seismic_data else 'old'
         
-        SeismicChannel.create(channels) if not channel else channel.update(channels)
-        SeismicData.create(data) if not seismic_data else seismic_data.update(data)
+        SeismicChannel.update_or_create({'scnl' : scnl}, {'code' : self.code, 'is_active' : 1})
+        SeismicData.update_or_create(attributes, values)
 
         info_txt = '{} {} {}'.format(date, scnl, status)
         log_txt = '{},{},{}'.format(date, scnl, status)

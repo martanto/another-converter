@@ -84,7 +84,7 @@ class Convert:
             new_trace = NewTrace(self.config).get(tr)
             if new_trace.stats.sampling_rate >= 50.0:
                 print(new_trace)
-                maximum = float(abs(new_trace.max()))
+                maximum = np.nanmax(new_trace.data)
                 path = SDS(overwrite=self.overwrite).save(self.converted,new_trace)
                 if self.save_index:
                     SaveIndex(maximum=maximum).save(path, new_trace, date, db=True)

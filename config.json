@@ -1,6 +1,6 @@
 {
-    "default" : "lokon",
-    "output_directory" : "E:\\Tesis\\Output",
+    "default" : "idds",
+    "output_directory" : "H:\\Output",
     "cpu_used": 8,
     "save_to_database" : 1,
     "save_to_csv" : 1,
@@ -16,6 +16,7 @@
             "input_directory": "I:\\SEMERU\\MSEED",
             "start_date": "2018-05-16",
             "end_date": "2023-12-03",
+            "code": "SMR",
             "stations": ["LEKR"]
         },
         "sac" : {
