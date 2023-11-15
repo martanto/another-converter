@@ -31,7 +31,11 @@ class Rescan:
         self.overwrite_plot = overwrite_plot
         
     def thumbnail(self, image, output_dir, filename):
-        os.makedirs(os.path.join(output_dir,'thumbnail'), exist_ok = True)
+        os.makedirs(
+            os.path.join(output_dir,'thumbnail'), 
+            exist_ok = True
+        )
+        
         outfile =  os.path.join(output_dir,'thumbnail',filename+'.jpg')
 
         image = Image.open(image)
@@ -45,22 +49,22 @@ class Rescan:
     def plot(self, trace):
         
         title = trace.stats.starttime.strftime('%Y-%m-%d')+' | '+trace.id+' | '+str(trace.stats.sampling_rate)+' Hz | '+str(trace.stats.npts)+' samples'
-        filename, path, full_path = SDS().get_directory(self.dayplot_directory, trace)
-        outfile = '{}.png'.format(full_path)
+        filename, output_dir, full_path = SDS().get_directory(self.dayplot_directory, trace)
+        image_file = '{}.png'.format(full_path)
         
         trace.plot(
             type = 'dayplot',
             interval = 60,
             one_tick_per_line = True,
             color = ['k'],
-            outfile = outfile,
+            outfile = image_file,
             number_of_ticks = 13,
             size= (1600,900),
             title = title
         )
         plt.close('all')
         
-        self.thumbnail(outfile, path, filename)
+        self.thumbnail(image_file, output_dir, filename)
         
     def rescan(self, filename, trace, overwrite=True):
         info, log_txt = SaveIndex().update(filename, trace)
