@@ -112,6 +112,7 @@
             "input_directory": "L:\\Anak Krakatau\\SAC",
             "start_date": "2018-01-01",
             "end_date": "2023-03-03",
+            "channels" : ["INFR","KRA1","KRA2","KRA3","PULO","SRTG"],
             "code": "KRA"
         },
         "sds" : {
