@@ -9,11 +9,11 @@ from models.SeismicData import SeismicData
 from models.SeismicChannel import SeismicChannel
 
 class SaveIndex:
-    def __init__(self, overwrite=False, maximum = 0):
+    def __init__(self, overwrite=False, maximum = 0, rescan=False):
         self.overwrite = overwrite
         self.maximum = maximum
         self.config = Configuration().get()
-        self.code = self.config['code']
+        self.code = None if rescan else self.config['code']
 
     def _count_zero_or_nan_value(self, trace):
         count_nan = np.count_nonzero(np.isnan(trace.data))
@@ -82,7 +82,15 @@ class SaveIndex:
         status = 'new' if not seismic_data else 'old'
         
         SeismicChannel.update_or_create({'scnl' : scnl}, {'code' : self.code, 'is_active' : 1})
-        SeismicData.update_or_create(attributes, values)
+        
+        while True:
+            try:
+                SeismicData.update_or_create(attributes, values)
+            except:
+                seismic_data = SeismicData.where('scnl', scnl).where('date', date).first()
+                seismic_data.update(values)
+            else:
+                break
 
         info_txt = '{} {} {}'.format(date, scnl, status)
         log_txt = '{},{},{}'.format(date, scnl, status)

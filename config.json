@@ -1,7 +1,7 @@
 {
     "default" : "idds",
     "output_directory" : "H:\\Output",
-    "cpu_used": 8,
+    "cpu_used": 10,
     "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
