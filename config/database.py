@@ -8,7 +8,7 @@ DATABASES = {
     "database": "seismic",
     "user": "homestead",
     "password": "secret",
-    "port": 33060,
+    "port": 3306,
     "log_queries": False,
   }
 }
