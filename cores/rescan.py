@@ -52,11 +52,13 @@ class Rescan:
         
         title = trace.stats.starttime.strftime('%Y-%m-%d')+' | '+trace.id+' | '+str(trace.stats.sampling_rate)+' Hz | '+str(trace.stats.npts)+' samples'
         filename, output_dir, full_path = SDS().get_directory(self.dayplot_directory, trace)
-        image_file = '{}.png'.format(full_path)
+        image_file = '{}.jpg'.format(full_path)
+        
+        print('Plot : {}'.format(title))
         
         trace.plot(
             type = 'dayplot',
-            interval = 30,
+            # interval = 30,
             one_tick_per_line = True,
             color = ['k'],
             outfile = image_file,
