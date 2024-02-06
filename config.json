@@ -1,12 +1,11 @@
 {
-    "default" : "idds",
+    "default" : "krakatau",
     "output_directory" : "H:\\Output",
-    "cpu_used": 8,
+    "cpu_used": 10,
     "save_to_database" : 1,
     "save_to_csv" : 1,
     "save_dayplot" : 1,
     "save_spectogram" : 0,
-    "code": "SMR",
     "type" : {
         "default" : {
             "input_directory" : "E:\\Tesis\\Input\\continuous\\seisan",
@@ -17,6 +16,7 @@
             "input_directory": "I:\\SEMERU\\MSEED",
             "start_date": "2018-05-16",
             "end_date": "2023-12-03",
+            "code": "SMR",
             "stations": ["LEKR"]
         },
         "sac" : {
@@ -109,9 +109,11 @@
             "end_date": "2023-07-31"
         },
         "krakatau": {
-            "input_directory": "F:\\Anak Krakatau\\SAC",
+            "input_directory": "L:\\Anak Krakatau\\SAC",
             "start_date": "2018-01-01",
-            "end_date": "2021-12-31"
+            "end_date": "2023-03-03",
+            "channels" : ["INFR","KRA1","KRA2","KRA3","PULO","SRTG"],
+            "code": "KRA"
         },
         "sds" : {
             "input_directory": "G:\\Output\\Converted\\SDS",

@@ -35,7 +35,7 @@ class Plot:
             
             trace.plot(
                 type='dayplot',
-                interval=60,
+                # interval=30,
                 one_tick_per_line=True,
                 color=['k'],
                 outfile= outfile,
