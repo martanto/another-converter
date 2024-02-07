@@ -53,18 +53,20 @@ class SDS:
         return filename, path, full_path
 
     def _converting_masked_array_to_pandas_then_to_numpy_array(self, trace_masked_array_data):
-        return pd.DataFrame(trace_masked_array_data)[0].to_numpy(dtype=np.float32)
+        return pd.DataFrame(trace_masked_array_data)[0].to_numpy(dtype=np.int32)
 
     def save(self, output, trace=Trace, encoding='STEIM2'):
         filename, path, full_path = self.get_directory(output, trace)
         
         if self.file_not_exists(full_path) or self.overwrite:
+            trace.data = np.where(trace.data == -2 ** 31, 0, trace.data)
+            trace.data = trace.data.astype(np.int32)
+
             if isinstance(trace.data, np.ma.masked_array):
                 trace.data = self._converting_masked_array_to_pandas_then_to_numpy_array(trace.data)
-                encoding = 'FLOAT32'
             try:
                 trace.write(full_path, format='MSEED', encoding=encoding)
-            except:                   
+            except:
                 trace.data = trace.data.clip(-2e30, 2e30)
                 trace.write(full_path, format='MSEED', encoding=encoding)
 
